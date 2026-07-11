@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>タイムカードby30</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; }
+body {
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  background:#f4f1ea; color:#333; font-size:16px;
+  -webkit-text-size-adjust:100%;
+}
+.wrap { max-width:820px; margin:0 auto; padding:10px 10px 30px; }
+button {
+  font-family:inherit; font-size:16px; padding:10px 14px; border:none; border-radius:10px;
+  background:#e8e2d5; color:#333; cursor:pointer; min-height:44px;
+}
+button:active { opacity:.7; }
+.btn-main { background:#e8843c; color:#fff; font-weight:bold; }
+.btn-sub  { background:#fff; border:2px solid #ccc; }
+.hidden { display:none !important; }
+#storageWarn {
+  background:#c62828; color:#fff; padding:12px; border-radius:10px; margin-bottom:12px;
+  font-size:15px; line-height:1.6; font-weight:bold;
+}
+/* ---- ホーム画面 ---- */
+#homeView header { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:6px 0 4px; }
+#homeView h1 { font-size:22px; color:#b3661f; }
+#homeClock { margin-left:auto; font-size:18px; color:#666; }
+.home-hint { font-size:14px; color:#888; margin:2px 0 12px; }
+#homeGrid { display:flex; flex-wrap:wrap; gap:10px; }
+.person-btn {
+  width:calc(50% - 5px); min-height:76px; background:#fff; border:2px solid #e8a967;
+  border-radius:14px; padding:10px 14px; text-align:left;
+  box-shadow:0 1px 3px rgba(0,0,0,.1);
+}
+.person-btn .pname { font-size:20px; font-weight:bold; display:block; margin-bottom:4px; }
+.person-btn .pstat { font-size:14px; color:#888; display:block; }
+.person-btn .pstat b { color:#2e7d32; font-weight:bold; }
+.home-footer { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; }
+.group-tabs { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:12px; padding-bottom:2px; }
+.group-tab {
+  white-space:nowrap; padding:9px 18px; border-radius:22px; font-size:16px;
+  background:#fff; border:2px solid #e8a967; color:#5a3a13; flex-shrink:0;
+}
+.group-tab.active { background:#e8843c; border-color:#e8843c; color:#fff; font-weight:bold; }
+.note { font-size:12px; color:#999; margin-top:12px; line-height:1.7; }
+/* ---- 個人ページ ---- */
+#personView header { display:flex; align-items:center; gap:10px; padding:6px 0 10px; }
+#personView h1 { font-size:22px; color:#b3661f; }
+#backHome { font-size:16px; }
+.stamp-card {
+  background:#fff; border-radius:14px; padding:16px; margin-bottom:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,.12); text-align:center;
+}
+#stampClock { font-size:42px; font-weight:bold; letter-spacing:2px; }
+#stampRounded { font-size:14px; color:#888; margin:2px 0 12px; }
+.stamp-btns { display:flex; gap:10px; }
+.stamp-btns button { flex:1; min-height:64px; font-size:20px; font-weight:bold; border-radius:12px; }
+#stampIn  { background:#e8843c; color:#fff; }
+#stampOut { background:#3f6fb5; color:#fff; }
+#todayStat { font-size:15px; color:#555; margin-top:10px; }
+#todayStat b { font-size:17px; }
+nav { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+nav .ym { flex:1; text-align:center; font-size:20px; font-weight:bold; }
+table#monthTable { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+#monthTable th {
+  background:#f7b166; color:#5a3a13; font-size:13px; padding:8px 2px; font-weight:bold;
+  border-bottom:2px solid #e8964a;
+}
+#monthTable td { padding:9px 2px; text-align:center; border-bottom:1px solid #eee; font-size:16px; }
+#monthTable tr.day-row { cursor:pointer; }
+#monthTable tr.day-row:active { background:#fdeedd !important; }
+#monthTable td.datecell { text-align:left; padding-left:10px; white-space:nowrap; font-size:15px; }
+tr.sat td.datecell { color:#1565c0; }
+tr.sun td.datecell { color:#c62828; }
+tr.sat { background:#f0f6fd; }
+tr.sun { background:#fdf0f0; }
+tr.today td { background:#fff6cc; }
+td.empty { color:#ccc; }
+tr.total-row td { background:#fbe3c8; font-weight:bold; border-top:2px solid #e8964a; font-size:16px; padding:12px 2px; }
+tr.total-row.over td { background:#f8c9c9; color:#b71c1c; }
+/* ---- トースト ---- */
+#toast {
+  position:fixed; left:50%; bottom:40px; transform:translateX(-50%);
+  background:#333; color:#fff; padding:14px 22px; border-radius:12px; font-size:17px;
+  box-shadow:0 4px 16px rgba(0,0,0,.35); z-index:30; max-width:90%; text-align:center;
+}
+/* ---- モーダル ---- */
+.modal-bg {
+  position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,.45);
+  display:flex; align-items:flex-start; justify-content:center; z-index:10;
+  overflow-y:auto; -webkit-overflow-scrolling:touch; padding:20px 8px 40px;
+}
+.modal {
+  background:#fff; border-radius:14px; padding:16px; width:100%; max-width:560px;
+  box-shadow:0 4px 24px rgba(0,0,0,.3);
+}
+.modal h2 { font-size:19px; margin-bottom:12px; color:#b3661f; }
+.sec { margin-bottom:14px; padding:10px; background:#faf7f0; border-radius:10px; }
+.sec .sec-head { display:flex; align-items:center; margin-bottom:8px; }
+.sec .sec-title { font-weight:bold; font-size:15px; color:#5a3a13; }
+.sec .sec-val { margin-left:auto; font-size:22px; font-weight:bold; color:#333; min-width:80px; text-align:right; }
+.btn-grid { display:flex; flex-wrap:wrap; gap:5px; }
+.btn-grid button {
+  min-width:44px; min-height:44px; padding:6px 6px; font-size:16px;
+  background:#fff; border:1.5px solid #d9cfbc; border-radius:8px;
+}
+.btn-grid button.sel { background:#e8843c; border-color:#e8843c; color:#fff; font-weight:bold; }
+.btn-grid .lbl { align-self:center; font-size:13px; color:#888; margin-right:2px; min-width:26px; }
+.calc-line { display:flex; align-items:center; font-size:15px; }
+.calc-line .v { margin-left:auto; font-size:20px; font-weight:bold; }
+.adj-btns { display:flex; gap:8px; margin-top:8px; }
+.adj-btns button { flex:1; background:#fff; border:1.5px solid #d9cfbc; font-size:16px; }
+.modal-actions { display:flex; gap:8px; margin-top:6px; }
+.modal-actions button { flex:1; font-size:17px; min-height:50px; }
+.btn-danger { background:#fff; border:2px solid #e57373; color:#c62828; }
+#namesList { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+#namesList .row { display:flex; align-items:center; gap:8px; }
+#namesList .row .no { width:26px; text-align:right; color:#999; font-size:14px; }
+#namesList input {
+  flex:1; font-size:18px; padding:10px 12px; border:2px solid #d9cfbc; border-radius:10px;
+}
+#namesList .color-btn {
+  width:46px; min-width:46px; height:46px; min-height:46px; padding:0;
+  border-radius:10px; border:3px solid; font-size:11px; line-height:1; flex-shrink:0;
+}
+#colorModalBg { z-index:20; }
+.color-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.color-grid button {
+  width:calc(25% - 6px); min-height:56px; border-radius:10px; border:3px solid;
+  font-size:13px; font-weight:bold; padding:4px;
+}
+.color-grid button.cur { outline:3px solid #333; }
+@media (max-width:480px){
+  .person-btn { width:100%; }
+  #monthTable th { font-size:11px; }
+  #monthTable td { font-size:14px; padding:8px 1px; }
+  #monthTable td.datecell { font-size:13px; padding-left:5px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ ホーム画面 ============ -->
+<div class="wrap" id="homeView">
+  <div id="storageWarn" class="hidden">
+    ⚠ 記録を保存できない状態です。<br>
+    プライベートブラウズ（シークレットモード）をオフにして開き直してください。
+    このままでは画面を閉じると入力が消えます。
+  </div>
+  <header>
+    <h1>⏱ タイムカードby30</h1>
+    <span id="homeClock"></span>
+  </header>
+  <p class="home-hint">自分の名前をタップ → 出勤・退勤を打刻</p>
+  <div id="groupTabs" class="group-tabs"></div>
+  <div id="homeGrid"></div>
+  <div class="home-footer">
+    <button id="exportThisBtn" class="btn-main">📊 Excel出力（今月）</button>
+    <button id="exportPrevBtn" class="btn-sub">Excel出力（先月）</button>
+    <button id="editNamesBtn" class="btn-sub">名簿編集</button>
+    <button id="editGroupsBtn" class="btn-sub">グループ編集</button>
+    <button id="backupBtn" class="btn-sub">バックアップ保存</button>
+    <button id="restoreBtn" class="btn-sub">バックアップ読込</button>
+    <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
+  </div>
+  <p class="note">
+    ・Excel出力には名簿の全員（全グループ分）のシートが入ります。<br>
+    ・記録はこの端末（ブラウザ）に保存され、<b>3年（36ヶ月）を過ぎた月は自動的に削除</b>されます。<br>
+    ・端末の故障・買い替えに備え、月に1回ほど「バックアップ保存」をおすすめします。
+  </p>
+</div>
+
+<!-- ============ 個人ページ ============ -->
+<div class="wrap hidden" id="personView">
+  <header>
+    <button id="backHome" class="btn-sub">← ホーム</button>
+    <h1 id="personName"></h1>
+  </header>
+  <div class="stamp-card">
+    <div id="stampClock">--:--</div>
+    <div id="stampRounded"></div>
+    <div class="stamp-btns">
+      <button id="stampIn">出勤を打刻</button>
+      <button id="stampOut">退勤を打刻</button>
+    </div>
+    <div id="todayStat"></div>
+  </div>
+  <nav>
+    <button id="prevM">◀ 前月</button>
+    <div class="ym" id="ymLabel"></div>
+    <button id="nextM">次月 ▶</button>
+    <button id="todayBtn" class="btn-sub">今月</button>
+  </nav>
+  <table id="monthTable">
+    <thead>
+      <tr>
+        <th style="width:22%">勤務日</th>
+        <th style="width:14%">出校</th>
+        <th style="width:14%">退校</th>
+        <th style="width:17%">在校時間</th>
+        <th style="width:17%">上限対象</th>
+        <th style="width:16%">振替対象</th>
+      </tr>
+    </thead>
+    <tbody id="monthBody"></tbody>
+  </table>
+  <p class="note">
+    ・日付の行をタップすると手入力・修正ができます（10分単位）。<br>
+    ・上限対象は「在校時間 − 8時間30分」で自動計算されます（＋−ボタンで調整可）。<br>
+    ・振替対象は通常0のため入力不要です。
+  </p>
+</div>
+
+<!-- ============ 入力モーダル ============ -->
+<div class="modal-bg hidden" id="editModalBg">
+  <div class="modal">
+    <h2 id="mTitle"></h2>
+    <div class="sec">
+      <div class="sec-head"><span class="sec-title">出校</span><span class="sec-val" id="sDisp">--:--</span></div>
+      <div class="btn-grid" id="sHours"></div>
+      <div class="btn-grid" id="sMins" style="margin-top:6px"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><span class="sec-title">退校</span><span class="sec-val" id="eDisp">--:--</span></div>
+      <div class="btn-grid" id="eHours"></div>
+      <div class="btn-grid" id="eMins" style="margin-top:6px"></div>
+      <div style="font-size:12px;color:#999;margin-top:6px">※退校が出校より前の時刻（午前0時台など）の場合は、翌日の退勤として在校時間を計算します。</div>
+    </div>
+    <div class="sec">
+      <div class="calc-line"><span>在校時間</span><span class="v" id="zDisp">−</span></div>
+      <div class="calc-line" style="margin-top:6px"><span><b>上限対象</b>（在校時間−8:30）</span><span class="v" id="uDisp">−</span></div>
+      <div class="adj-btns">
+        <button id="uMinus">−10分</button>
+        <button id="uPlus">＋10分</button>
+        <button id="uAuto">自動計算に戻す</button>
+      </div>
+      <div class="calc-line" style="margin-top:12px"><span>振替対象（通常0）</span><span class="v" id="fDisp">0:00</span></div>
+      <div class="adj-btns">
+        <button id="fMinus">−10分</button>
+        <button id="fPlus">＋10分</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="mClear" class="btn-danger">クリア</button>
+      <button id="mCancel" class="btn-sub">キャンセル</button>
+      <button id="mSave" class="btn-main">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 名前編集モーダル ============ -->
+<div class="modal-bg hidden" id="namesModalBg">
+  <div class="modal">
+    <h2>名簿の編集（名前と人数）</h2>
+    <div class="sec" style="display:flex;align-items:center;gap:12px">
+      <span class="sec-title">名簿の人数</span>
+      <button id="cntMinus" type="button" style="min-width:52px;font-size:20px">−</button>
+      <span id="cntDisp" style="font-size:22px;font-weight:bold;min-width:64px;text-align:center"></span>
+      <button id="cntPlus" type="button" style="min-width:52px;font-size:20px">＋</button>
+    </div>
+    <p class="note" style="margin:0 0 10px">※最大50人。人数を減らしても、隠れた人の記録は消えません。ホームに誰を表示するかは「グループ編集」で選べます。<br>※名前の右の色をタップすると、ホームの枠の色を16色から選べます。</p>
+    <div id="namesList"></div>
+    <p class="note" style="margin:0 0 12px">※名前を書き換えても過去の記録はその枠に残ります。人の入れ替え時は名前を上書きしてください。</p>
+    <div class="modal-actions">
+      <button id="nCancel" class="btn-sub">キャンセル</button>
+      <button id="nSave" class="btn-main">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 色選択モーダル ============ -->
+<div class="modal-bg hidden" id="colorModalBg">
+  <div class="modal">
+    <h2 id="colorTitle">色を選択</h2>
+    <div class="color-grid" id="colorGrid"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button id="colorCancel" class="btn-sub">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ グループ編集モーダル ============ -->
+<div class="modal-bg hidden" id="groupModalBg">
+  <div class="modal">
+    <h2>グループ編集</h2>
+    <div class="sec">
+      <div class="sec-title" style="margin-bottom:8px">グループを選択</div>
+      <div class="btn-grid" id="gTabs"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title" style="margin-bottom:8px">グループ名</div>
+      <input type="text" id="gName" maxlength="15"
+        style="width:100%;font-size:18px;padding:10px 12px;border:2px solid #d9cfbc;border-radius:10px">
+    </div>
+    <div class="sec">
+      <div class="sec-title" style="margin-bottom:8px">メンバー（タップで追加・解除）</div>
+      <div class="btn-grid" id="gMembers"></div>
+      <p class="note" style="margin:8px 0 0">※同じ人を複数のグループに入れることもできます。</p>
+    </div>
+    <button id="gDelete" class="btn-danger" style="width:100%;margin-bottom:10px">このグループを削除</button>
+    <div class="modal-actions">
+      <button id="gCancel" class="btn-sub">キャンセル</button>
+      <button id="gSave" class="btn-main">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= 保存領域チェック ================= */
+var storageOK = true;
+try {
+  localStorage.setItem("__tc_test", "1");
+  localStorage.removeItem("__tc_test");
+} catch(e){ storageOK = false; }
+
+/* ================= データ ================= */
+var STORE_KEY = "timecardAppData";
+var KEEP_MONTHS = 36;           // 3年
+var WORK_MIN = 8*60 + 30;       // 勤務時間 8時間30分（含休憩45分）
+var MAX_PERSONS = 50;
+var DEFAULT_COUNT = 6;
+var WDAY = ["日","月","火","水","木","金","土"];
+
+function normCount(c){
+  c = parseInt(c, 10);
+  if (isNaN(c) || c < 1) return DEFAULT_COUNT;
+  if (c > MAX_PERSONS) return MAX_PERSONS;
+  return c;
+}
+function defaultGroups(count){
+  var members = [];
+  for (var i=0;i<count;i++) members.push(i);
+  return [{ name:"グループ1", members:members }];
+}
+function normalizeState(s){
+  if (!s.view) s.view = {person:0};
+  s.count = normCount(s.count);
+  if (!s.colors) s.colors = {};
+  if (!s.groups || !s.groups.length){
+    s.groups = defaultGroups(s.count);
+  } else {
+    for (var g=0; g<s.groups.length; g++){
+      var gr = s.groups[g];
+      if (typeof gr.name !== "string") gr.name = "グループ" + (g+1);
+      if (!gr.members) gr.members = [];
+    }
+  }
+  if (typeof s.view.group !== "number" || s.view.group < 0 || s.view.group >= s.groups.length) s.view.group = 0;
+  return s;
+}
+function defaultState(){
+  return normalizeState({ names:[], records:{}, view:{person:0}, count:DEFAULT_COUNT });
+}
+function loadState(){
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return null;
+    var s = JSON.parse(raw);
+    if (!s || !s.names || !s.records) return null;
+    return normalizeState(s);
+  } catch(e){ return null; }
+}
+function getName(i){
+  var v = state.names[i];
+  if (v === undefined || v === null || v === "") return "職員" + (i+1);
+  return v;
+}
+
+/* 枠の色パレット（b=ふち, f=中の塗り） */
+var PALETTE = [
+  { name:"標準",     b:"#e8a967", f:"#ffffff" },
+  { name:"赤",       b:"#c62828", f:"#fdecea" },
+  { name:"オレンジ", b:"#ef6c00", f:"#fff3e0" },
+  { name:"黄",       b:"#f9a825", f:"#fff7d6" },
+  { name:"黄緑",     b:"#7cb342", f:"#f1f8e9" },
+  { name:"緑",       b:"#2e7d32", f:"#e4f3e5" },
+  { name:"深緑",     b:"#00695c", f:"#e0f2f1" },
+  { name:"水色",     b:"#00acc1", f:"#e0f7fa" },
+  { name:"青",       b:"#1565c0", f:"#ddebfa" },
+  { name:"紺",       b:"#283593", f:"#e8eaf6" },
+  { name:"紫",       b:"#6a1b9a", f:"#f1e7f8" },
+  { name:"藤色",     b:"#9575cd", f:"#f0eafa" },
+  { name:"ピンク",   b:"#d81b60", f:"#fce4ec" },
+  { name:"茶",       b:"#6d4c41", f:"#efebe9" },
+  { name:"グレー",   b:"#757575", f:"#ededed" },
+  { name:"黒",       b:"#212121", f:"#e8e8e8" }
+];
+function colorIdx(i){
+  var c = parseInt(state.colors[i], 10);
+  if (isNaN(c) || c < 0 || c >= PALETTE.length) return 0;
+  return c;
+}
+var saveErrorShown = false;
+function saveState(){
+  if (!storageOK) return; // 警告バナー表示済み
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch(e){
+    if (!saveErrorShown){
+      saveErrorShown = true;
+      alert("保存できませんでした。\nプライベートブラウズ（シークレットモード）になっていないか確認し、通常モードで開き直してください。");
+    }
+  }
+}
+var state = loadState() || defaultState();
+
+/* 3年より前の月を自動削除 */
+function purgeOld(){
+  var now = new Date();
+  var cutoff = now.getFullYear()*12 + now.getMonth() - KEEP_MONTHS;
+  var changed = false;
+  for (var p in state.records){
+    var months = state.records[p];
+    for (var ym in months){
+      var parts = ym.split("-");
+      var idx = parseInt(parts[0],10)*12 + (parseInt(parts[1],10)-1);
+      if (idx < cutoff){ delete months[ym]; changed = true; }
+    }
+  }
+  if (changed) saveState();
+}
+purgeOld();
+
+function ymKey(y,m){ return y + "-" + (m<10?"0":"") + m; }
+function getRec(p,y,m,d){
+  var pm = state.records["p"+p]; if(!pm) return null;
+  var mm = pm[ymKey(y,m)]; if(!mm) return null;
+  return mm[d] || null;
+}
+function setRec(p,y,m,d,rec){
+  var pk = "p"+p, yk = ymKey(y,m);
+  if (rec === null){
+    if (state.records[pk] && state.records[pk][yk]) delete state.records[pk][yk][d];
+  } else {
+    if (!state.records[pk]) state.records[pk] = {};
+    if (!state.records[pk][yk]) state.records[pk][yk] = {};
+    state.records[pk][yk][d] = rec;
+  }
+  saveState();
+}
+
+/* ================= 表示ユーティリティ ================= */
+function fmtClock(min){
+  if (min === null || min === undefined) return "−";
+  var h = Math.floor(min/60), m = min%60;
+  return h + ":" + (m<10?"0":"") + m;
+}
+function fmtDur(min){
+  if (min === null || min === undefined) return "−";
+  var neg = min < 0; if (neg) min = -min;
+  var h = Math.floor(min/60), m = min%60;
+  return (neg?"−":"") + h + ":" + (m<10?"0":"") + m;
+}
+function fmtDurJa(min){
+  if (min === null || min === undefined) return "−";
+  var h = Math.floor(min/60), m = min%60;
+  return h + "時間" + m + "分";
+}
+function zaikoMin(rec){
+  if (!rec || rec.s === null || rec.s === undefined || rec.e === null || rec.e === undefined) return null;
+  var z = rec.e - rec.s;
+  if (z < 0) z += 24*60; // 退校が出校より前の時刻 → 日をまたいだ勤務として計算
+  return z;
+}
+function autoU(z){
+  if (z === null) return null;
+  var u = z - WORK_MIN;
+  return u > 0 ? u : 0;
+}
+function escHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function nowMin(){ var t = new Date(); return t.getHours()*60 + t.getMinutes(); }
+function roundedNow(){ // 10分単位に丸め（四捨五入）、0:00〜23:50に収める
+  var r = Math.round(nowMin()/10)*10;
+  if (r >= 24*60) r = 23*60 + 50;
+  return r;
+}
+
+/* ================= 画面切り替え ================= */
+var homeView = document.getElementById("homeView");
+var personView = document.getElementById("personView");
+var view = { person:0, y:0, m:0 };
+
+function showHome(){
+  personView.classList.add("hidden");
+  homeView.classList.remove("hidden");
+  renderHome();
+  window.scrollTo(0,0);
+}
+function showPerson(p){
+  view.person = p;
+  var t = new Date();
+  view.y = t.getFullYear(); view.m = t.getMonth()+1;
+  document.getElementById("personName").textContent = getName(p);
+  document.querySelector(".stamp-card").style.border = "3px solid " + PALETTE[colorIdx(p)].b;
+  homeView.classList.add("hidden");
+  personView.classList.remove("hidden");
+  renderMonth();
+  renderTodayStat();
+  window.scrollTo(0,0);
+}
+
+/* ================= ホーム画面 ================= */
+var homeGrid = document.getElementById("homeGrid");
+var groupTabs = document.getElementById("groupTabs");
+function activeMembers(){
+  if (state.view.group >= state.groups.length) state.view.group = 0;
+  var members = state.groups[state.view.group].members;
+  var out = [];
+  for (var i=0;i<members.length;i++){
+    if (members[i] >= 0 && members[i] < state.count) out.push(members[i]);
+  }
+  return out;
+}
+function renderHome(){
+  // グループタブ（2つ以上あるときだけ表示）
+  if (state.groups.length > 1){
+    var th = "";
+    for (var g=0; g<state.groups.length; g++){
+      th += '<button type="button" class="group-tab'+(g===state.view.group?' active':'')+'" data-g="'+g+'">'
+        + escHtml(state.groups[g].name) + '</button>';
+    }
+    groupTabs.innerHTML = th;
+    groupTabs.style.display = "";
+  } else {
+    groupTabs.innerHTML = "";
+    groupTabs.style.display = "none";
+  }
+  // メンバーボタン
+  var t = new Date();
+  var y = t.getFullYear(), m = t.getMonth()+1, d = t.getDate();
+  var members = activeMembers();
+  var html = "";
+  for (var k=0;k<members.length;k++){
+    var i = members[k];
+    var rec = getRec(i, y, m, d);
+    var sTxt = rec && rec.s !== null && rec.s !== undefined ? "<b>出 " + fmtClock(rec.s) + "</b>" : "出 −";
+    var eTxt = rec && rec.e !== null && rec.e !== undefined ? "<b>退 " + fmtClock(rec.e) + "</b>" : "退 −";
+    var pal = PALETTE[colorIdx(i)];
+    html += '<button type="button" class="person-btn" data-p="'+i+'" style="border-color:'+pal.b+';background:'+pal.f+'">'
+      + '<span class="pname">'+escHtml(getName(i))+'</span>'
+      + '<span class="pstat">本日　'+sTxt+'　'+eTxt+'</span>'
+      + '</button>';
+  }
+  if (!members.length){
+    html = '<p class="home-hint" style="padding:20px 0">このグループにはメンバーがいません。「グループ編集」でメンバーを追加してください。</p>';
+  }
+  homeGrid.innerHTML = html;
+}
+groupTabs.addEventListener("click", function(ev){
+  var b = ev.target;
+  while (b && b !== groupTabs && !b.getAttribute("data-g")) b = b.parentNode;
+  if (!b || b === groupTabs) return;
+  state.view.group = parseInt(b.getAttribute("data-g"),10);
+  saveState();
+  renderHome();
+});
+homeGrid.addEventListener("click", function(ev){
+  var b = ev.target;
+  while (b && b !== homeGrid && !b.getAttribute("data-p")) b = b.parentNode;
+  if (!b || b === homeGrid) return;
+  showPerson(parseInt(b.getAttribute("data-p"),10));
+});
+
+/* ================= 時計 ================= */
+function updateClocks(){
+  var t = new Date();
+  var hm = t.getHours() + ":" + ("0"+t.getMinutes()).slice(-2);
+  document.getElementById("homeClock").textContent =
+    (t.getMonth()+1) + "月" + t.getDate() + "日（" + WDAY[t.getDay()] + "）　" + hm;
+  document.getElementById("stampClock").textContent = hm;
+  document.getElementById("stampRounded").textContent =
+    "打刻すると「" + fmtClock(roundedNow()) + "」で記録されます（10分単位）";
+}
+updateClocks();
+setInterval(updateClocks, 5000);
+
+/* ================= 打刻 ================= */
+function renderTodayStat(){
+  var t = new Date();
+  var rec = getRec(view.person, t.getFullYear(), t.getMonth()+1, t.getDate());
+  var s = rec && rec.s !== null && rec.s !== undefined ? fmtClock(rec.s) : "−";
+  var e = rec && rec.e !== null && rec.e !== undefined ? fmtClock(rec.e) : "−";
+  document.getElementById("todayStat").innerHTML =
+    "本日の記録　出勤 <b>" + s + "</b>　／　退勤 <b>" + e + "</b>";
+}
+var toastTimer = null, returnTimer = null;
+function showToast(msg){
+  var el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.add("hidden"); }, 2500);
+}
+function stamp(kind){ // kind: "in" / "out"
+  var t = new Date();
+  var y = t.getFullYear(), m = t.getMonth()+1, d = t.getDate();
+  var rec = getRec(view.person, y, m, d) || { s:null, e:null, u:null, f:0 };
+  var val = roundedNow();
+  if (kind === "in"){
+    if (rec.s !== null && rec.s !== undefined){
+      if (!confirm("すでに出勤 " + fmtClock(rec.s) + " が記録されています。" + fmtClock(val) + " で上書きしますか？")) return;
+    }
+    rec.s = val;
+  } else {
+    if (rec.e !== null && rec.e !== undefined){
+      if (!confirm("すでに退勤 " + fmtClock(rec.e) + " が記録されています。" + fmtClock(val) + " で上書きしますか？")) return;
+    }
+    rec.e = val;
+  }
+  // 上限対象を自動計算で更新（手動調整は日付タップで可能）
+  rec.u = autoU(zaikoMin(rec));
+  setRec(view.person, y, m, d, rec);
+  renderTodayStat();
+  if (view.y === y && view.m === m) renderMonth();
+  showToast(getName(view.person) + "　" + (kind==="in"?"出勤":"退勤") + " " + fmtClock(val) + " を記録しました");
+  // 次の人が使いやすいよう、少し待ってホームに戻る
+  if (returnTimer) clearTimeout(returnTimer);
+  returnTimer = setTimeout(showHome, 1800);
+}
+document.getElementById("stampIn").addEventListener("click", function(){ stamp("in"); });
+document.getElementById("stampOut").addEventListener("click", function(){ stamp("out"); });
+document.getElementById("backHome").addEventListener("click", function(){
+  if (returnTimer) clearTimeout(returnTimer);
+  showHome();
+});
+
+/* ================= 月一覧 ================= */
+var ymLabel = document.getElementById("ymLabel");
+var monthBody = document.getElementById("monthBody");
+
+function renderMonth(){
+  ymLabel.textContent = view.y + "年" + view.m + "月";
+  var days = new Date(view.y, view.m, 0).getDate();
+  var tnow = new Date();
+  var isThisMonth = (tnow.getFullYear()===view.y && tnow.getMonth()+1===view.m);
+  var html = "";
+  var totalU = 0, totalZ = 0, totalF = 0;
+  for (var d=1; d<=days; d++){
+    var w = new Date(view.y, view.m-1, d).getDay();
+    var rec = getRec(view.person, view.y, view.m, d);
+    var z = zaikoMin(rec);
+    var u = rec && rec.u !== null && rec.u !== undefined ? rec.u : null;
+    var f = rec && rec.f ? rec.f : 0;
+    if (u !== null) totalU += u;
+    if (z !== null) totalZ += z;
+    totalF += f;
+    var cls = "day-row" + (w===0?" sun":w===6?" sat":"") + (isThisMonth && d===tnow.getDate() ? " today":"");
+    html += '<tr class="'+cls+'" data-d="'+d+'">'
+      + '<td class="datecell">'+view.m+'月'+d+'日（'+WDAY[w]+'）</td>'
+      + '<td'+(rec&&rec.s!==null&&rec.s!==undefined?'':' class="empty"')+'>'+(rec&&rec.s!==null&&rec.s!==undefined?fmtClock(rec.s):"−")+'</td>'
+      + '<td'+(rec&&rec.e!==null&&rec.e!==undefined?'':' class="empty"')+'>'+(rec&&rec.e!==null&&rec.e!==undefined?fmtClock(rec.e):"−")+'</td>'
+      + '<td'+(z!==null?'':' class="empty"')+'>'+(z!==null?fmtDur(z):"−")+'</td>'
+      + '<td'+(u!==null?'':' class="empty"')+'>'+(u!==null?fmtDur(u):"−")+'</td>'
+      + '<td'+(f?'':' class="empty"')+'>'+(f?fmtDur(f):"0:00")+'</td>'
+      + '</tr>';
+  }
+  var over = totalU > 45*60;
+  html += '<tr class="total-row'+(over?" over":"")+'"><td class="datecell">月合計'+(over?"⚠":"")+'</td><td></td><td></td>'
+    + '<td>'+fmtDur(totalZ)+'</td><td>'+fmtDur(totalU)+'</td><td>'+fmtDur(totalF)+'</td></tr>';
+  monthBody.innerHTML = html;
+}
+
+document.getElementById("prevM").addEventListener("click", function(){
+  view.m--; if (view.m<1){ view.m=12; view.y--; } renderMonth();
+});
+document.getElementById("nextM").addEventListener("click", function(){
+  view.m++; if (view.m>12){ view.m=1; view.y++; } renderMonth();
+});
+document.getElementById("todayBtn").addEventListener("click", function(){
+  var t = new Date(); view.y = t.getFullYear(); view.m = t.getMonth()+1; renderMonth();
+});
+monthBody.addEventListener("click", function(ev){
+  var tr = ev.target;
+  while (tr && tr.tagName !== "TR") tr = tr.parentNode;
+  if (!tr || !tr.getAttribute("data-d")) return;
+  openEdit(parseInt(tr.getAttribute("data-d"),10));
+});
+
+/* ================= 入力モーダル ================= */
+var editBg = document.getElementById("editModalBg");
+var S_HOURS = [];
+var E_HOURS = [];
+for (var h=0; h<24; h++){ S_HOURS.push(h); E_HOURS.push(h); }
+var MINS = [0,10,20,30,40,50];
+var edit = null;
+
+function buildGrid(id, vals, lbl, field){
+  var el = document.getElementById(id);
+  var html = '<span class="lbl">'+lbl+'</span>';
+  for (var i=0;i<vals.length;i++){
+    html += '<button type="button" data-f="'+field+'" data-v="'+vals[i]+'">'+(lbl==="分"&&vals[i]===0?"00":vals[i])+'</button>';
+  }
+  if (lbl==="時") html += '<button type="button" data-f="'+field+'" data-v="none">なし</button>';
+  el.innerHTML = html;
+  el.addEventListener("click", function(ev){
+    var b = ev.target;
+    if (!b || b.tagName!=="BUTTON") return;
+    var f = b.getAttribute("data-f"), v = b.getAttribute("data-v");
+    if (v === "none"){
+      if (f==="sH"){ edit.sH=null; edit.sM=0; } else { edit.eH=null; edit.eM=0; }
+    } else {
+      edit[f] = parseInt(v,10);
+      if (f==="sH" && edit.sM===null) edit.sM=0;
+      if (f==="eH" && edit.eM===null) edit.eM=0;
+    }
+    refreshEdit();
+  });
+}
+buildGrid("sHours", S_HOURS, "時", "sH");
+buildGrid("sMins", MINS, "分", "sM");
+buildGrid("eHours", E_HOURS, "時", "eH");
+buildGrid("eMins", MINS, "分", "eM");
+
+function openEdit(d){
+  var rec = getRec(view.person, view.y, view.m, d) || {};
+  var hasS = rec.s !== null && rec.s !== undefined;
+  var hasE = rec.e !== null && rec.e !== undefined;
+  edit = {
+    d: d,
+    sH: hasS ? Math.floor(rec.s/60) : null,
+    sM: hasS ? rec.s%60 : 0,
+    eH: hasE ? Math.floor(rec.e/60) : null,
+    eM: hasE ? rec.e%60 : 0,
+    u: (rec.u !== null && rec.u !== undefined) ? rec.u : null,
+    f: rec.f || 0,
+    uManual: false
+  };
+  var z = calcZ();
+  var au = autoU(z);
+  if (edit.u !== null && edit.u !== au) edit.uManual = true;
+  var w = new Date(view.y, view.m-1, d).getDay();
+  document.getElementById("mTitle").textContent =
+    view.m+"月"+d+"日（"+WDAY[w]+"）　" + getName(view.person);
+  refreshEdit();
+  editBg.classList.remove("hidden");
+}
+function calcZ(){
+  if (edit.sH===null || edit.eH===null) return null;
+  var z = (edit.eH*60+edit.eM) - (edit.sH*60+edit.sM);
+  if (z < 0) z += 24*60; // 日またぎ勤務
+  return z;
+}
+function refreshEdit(){
+  var z = calcZ();
+  if (!edit.uManual) edit.u = autoU(z);
+  markSel("sHours","sH",edit.sH); markSel("sMins","sM",edit.sH===null?null:edit.sM);
+  markSel("eHours","eH",edit.eH); markSel("eMins","eM",edit.eH===null?null:edit.eM);
+  document.getElementById("sDisp").textContent = edit.sH===null ? "--:--" : fmtClock(edit.sH*60+edit.sM);
+  document.getElementById("eDisp").textContent = edit.eH===null ? "--:--" : fmtClock(edit.eH*60+edit.eM);
+  document.getElementById("zDisp").textContent = z===null ? "−" : fmtDurJa(z);
+  document.getElementById("uDisp").textContent = edit.u===null ? "−" : fmtDurJa(edit.u);
+  document.getElementById("fDisp").textContent = fmtDurJa(edit.f);
+}
+function markSel(gridId, field, val){
+  var btns = document.getElementById(gridId).getElementsByTagName("button");
+  for (var i=0;i<btns.length;i++){
+    var v = btns[i].getAttribute("data-v");
+    var on = (val===null && v==="none") ||
+             (val!==null && v!=="none" && parseInt(v,10)===val);
+    if (on) btns[i].className = "sel"; else btns[i].className = "";
+  }
+}
+document.getElementById("uMinus").addEventListener("click", function(){
+  if (edit.u===null) edit.u = 0;
+  edit.u = Math.max(0, edit.u-10); edit.uManual = true; refreshEdit();
+});
+document.getElementById("uPlus").addEventListener("click", function(){
+  if (edit.u===null) edit.u = 0;
+  edit.u += 10; edit.uManual = true; refreshEdit();
+});
+document.getElementById("uAuto").addEventListener("click", function(){
+  edit.uManual = false; refreshEdit();
+});
+document.getElementById("fMinus").addEventListener("click", function(){
+  edit.f = Math.max(0, edit.f-10); refreshEdit();
+});
+document.getElementById("fPlus").addEventListener("click", function(){
+  edit.f += 10; refreshEdit();
+});
+document.getElementById("mCancel").addEventListener("click", function(){
+  editBg.classList.add("hidden");
+});
+document.getElementById("mClear").addEventListener("click", function(){
+  setRec(view.person, view.y, view.m, edit.d, null);
+  editBg.classList.add("hidden");
+  renderMonth(); renderTodayStat();
+});
+document.getElementById("mSave").addEventListener("click", function(){
+  var s = edit.sH===null ? null : edit.sH*60+edit.sM;
+  var e = edit.eH===null ? null : edit.eH*60+edit.eM;
+  if (s===null && e===null && (edit.u===null || edit.u===0) && edit.f===0){
+    setRec(view.person, view.y, view.m, edit.d, null);
+  } else {
+    setRec(view.person, view.y, view.m, edit.d, { s:s, e:e, u:edit.u, f:edit.f });
+  }
+  editBg.classList.add("hidden");
+  renderMonth(); renderTodayStat();
+});
+editBg.addEventListener("click", function(ev){
+  if (ev.target === editBg) editBg.classList.add("hidden");
+});
+
+/* ================= 名前・人数編集 ================= */
+var namesBg = document.getElementById("namesModalBg");
+var editCount = DEFAULT_COUNT;
+var editNames = [];
+var editColors = [];
+
+function collectNameInputs(){
+  for (var i=0;i<editCount;i++){
+    var el = document.getElementById("nameIn"+i);
+    if (el) editNames[i] = el.value;
+  }
+}
+function styleColorBtn(btn, ci){
+  var pal = PALETTE[ci];
+  btn.style.borderColor = pal.b;
+  btn.style.background = pal.f;
+  btn.style.color = pal.b;
+  btn.textContent = pal.name;
+}
+function renderNamesList(){
+  document.getElementById("cntDisp").textContent = editCount + "人";
+  var html = "";
+  for (var i=0;i<editCount;i++){
+    if (editNames[i] === undefined) editNames[i] = getName(i);
+    if (editColors[i] === undefined) editColors[i] = colorIdx(i);
+    html += '<div class="row"><span class="no">'+(i+1)+'</span>'
+      + '<input type="text" id="nameIn'+i+'" value="'+escHtml(editNames[i])+'" maxlength="20">'
+      + '<button type="button" class="color-btn" id="colorBtn'+i+'" data-i="'+i+'"></button></div>';
+  }
+  document.getElementById("namesList").innerHTML = html;
+  for (var i=0;i<editCount;i++){
+    styleColorBtn(document.getElementById("colorBtn"+i), editColors[i]);
+  }
+}
+/* 色選択パレット */
+var colorBg = document.getElementById("colorModalBg");
+var colorTarget = 0;
+function openColorPicker(i){
+  colorTarget = i;
+  document.getElementById("colorTitle").textContent = "色を選択　" + (editNames[i] || getName(i));
+  var html = "";
+  for (var c=0;c<PALETTE.length;c++){
+    var pal = PALETTE[c];
+    html += '<button type="button" data-c="'+c+'" class="'+(c===editColors[i]?'cur':'')+'"'
+      + ' style="border-color:'+pal.b+';background:'+pal.f+';color:'+pal.b+'">'+pal.name+'</button>';
+  }
+  document.getElementById("colorGrid").innerHTML = html;
+  colorBg.classList.remove("hidden");
+}
+document.getElementById("colorGrid").addEventListener("click", function(ev){
+  var b = ev.target;
+  if (!b || b.tagName!=="BUTTON") return;
+  editColors[colorTarget] = parseInt(b.getAttribute("data-c"),10);
+  styleColorBtn(document.getElementById("colorBtn"+colorTarget), editColors[colorTarget]);
+  colorBg.classList.add("hidden");
+});
+document.getElementById("colorCancel").addEventListener("click", function(){
+  colorBg.classList.add("hidden");
+});
+colorBg.addEventListener("click", function(ev){
+  if (ev.target === colorBg) colorBg.classList.add("hidden");
+});
+document.getElementById("namesList").addEventListener("click", function(ev){
+  var b = ev.target;
+  if (!b || b.tagName!=="BUTTON" || !b.getAttribute("data-i")) return;
+  collectNameInputs(); // 入力中の名前を保持（色選択タイトルにも反映）
+  openColorPicker(parseInt(b.getAttribute("data-i"),10));
+});
+document.getElementById("editNamesBtn").addEventListener("click", function(){
+  editCount = state.count;
+  editNames = [];
+  editColors = [];
+  renderNamesList();
+  namesBg.classList.remove("hidden");
+});
+document.getElementById("cntMinus").addEventListener("click", function(){
+  if (editCount <= 1) return;
+  collectNameInputs();
+  editCount--;
+  renderNamesList();
+});
+document.getElementById("cntPlus").addEventListener("click", function(){
+  if (editCount >= MAX_PERSONS) return;
+  collectNameInputs();
+  editCount++;
+  renderNamesList();
+});
+document.getElementById("nCancel").addEventListener("click", function(){
+  namesBg.classList.add("hidden");
+});
+document.getElementById("nSave").addEventListener("click", function(){
+  collectNameInputs();
+  for (var i=0;i<editCount;i++){
+    var v = String(editNames[i]).replace(/^\s+|\s+$/g,"");
+    state.names[i] = v || ("職員"+(i+1));
+    if (editColors[i] !== undefined) state.colors[i] = editColors[i];
+  }
+  // グループが1つだけの運用なら、増えた人を自動でそのグループに入れる
+  if (state.groups.length === 1 && editCount > state.count){
+    var m = state.groups[0].members;
+    for (var i=state.count; i<editCount; i++){
+      var dup = false;
+      for (var k=0;k<m.length;k++) if (m[k]===i){ dup=true; break; }
+      if (!dup) m.push(i);
+    }
+  }
+  state.count = editCount;
+  saveState();
+  namesBg.classList.add("hidden");
+  renderHome();
+});
+namesBg.addEventListener("click", function(ev){
+  if (ev.target === namesBg) namesBg.classList.add("hidden");
+});
+
+/* ================= グループ編集 ================= */
+var groupBg = document.getElementById("groupModalBg");
+var gGroups = [], gSel = 0;
+
+function gCollect(){
+  var v = document.getElementById("gName").value.replace(/^\s+|\s+$/g,"");
+  gGroups[gSel].name = v || ("グループ" + (gSel+1));
+}
+function gInGroup(i){
+  var m = gGroups[gSel].members;
+  for (var k=0;k<m.length;k++) if (m[k]===i) return k;
+  return -1;
+}
+function renderGroupEdit(){
+  var th = "";
+  for (var g=0; g<gGroups.length; g++){
+    th += '<button type="button" class="'+(g===gSel?'sel':'')+'" data-g="'+g+'">'+escHtml(gGroups[g].name)+'</button>';
+  }
+  th += '<button type="button" data-g="add">＋追加</button>';
+  document.getElementById("gTabs").innerHTML = th;
+  document.getElementById("gName").value = gGroups[gSel].name;
+  var mh = "";
+  for (var i=0;i<state.count;i++){
+    mh += '<button type="button" class="'+(gInGroup(i)>=0?'sel':'')+'" data-i="'+i+'">'+escHtml(getName(i))+'</button>';
+  }
+  document.getElementById("gMembers").innerHTML = mh;
+}
+document.getElementById("editGroupsBtn").addEventListener("click", function(){
+  gGroups = JSON.parse(JSON.stringify(state.groups));
+  gSel = state.view.group < gGroups.length ? state.view.group : 0;
+  renderGroupEdit();
+  groupBg.classList.remove("hidden");
+});
+document.getElementById("gTabs").addEventListener("click", function(ev){
+  var b = ev.target;
+  if (!b || b.tagName!=="BUTTON") return;
+  var g = b.getAttribute("data-g");
+  gCollect();
+  if (g === "add"){
+    if (gGroups.length >= 20){ alert("グループは20個までです。"); return; }
+    gGroups.push({ name:"グループ"+(gGroups.length+1), members:[] });
+    gSel = gGroups.length - 1;
+  } else {
+    gSel = parseInt(g,10);
+  }
+  renderGroupEdit();
+});
+document.getElementById("gMembers").addEventListener("click", function(ev){
+  var b = ev.target;
+  if (!b || b.tagName!=="BUTTON") return;
+  gCollect(); // 入力中のグループ名を保持
+  var i = parseInt(b.getAttribute("data-i"),10);
+  var pos = gInGroup(i);
+  if (pos >= 0) gGroups[gSel].members.splice(pos,1);
+  else gGroups[gSel].members.push(i);
+  renderGroupEdit();
+});
+document.getElementById("gDelete").addEventListener("click", function(){
+  if (gGroups.length <= 1){ alert("最後のグループは削除できません。"); return; }
+  if (!confirm("グループ「"+gGroups[gSel].name+"」を削除しますか？\n（メンバーの記録は消えません）")) return;
+  gGroups.splice(gSel,1);
+  gSel = 0;
+  renderGroupEdit();
+});
+document.getElementById("gCancel").addEventListener("click", function(){
+  groupBg.classList.add("hidden");
+});
+document.getElementById("gSave").addEventListener("click", function(){
+  gCollect();
+  state.groups = gGroups;
+  if (state.view.group >= state.groups.length) state.view.group = 0;
+  saveState();
+  groupBg.classList.add("hidden");
+  renderHome();
+});
+groupBg.addEventListener("click", function(ev){
+  if (ev.target === groupBg) groupBg.classList.add("hidden");
+});
+
+/* ================= バックアップ ================= */
+document.getElementById("backupBtn").addEventListener("click", function(){
+  var d = new Date();
+  var name = "タイムカード_バックアップ_" + d.getFullYear()
+    + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d.getDate()).slice(-2) + ".json";
+  downloadBlob(new Blob([JSON.stringify(state)], {type:"application/json"}), name);
+});
+document.getElementById("restoreBtn").addEventListener("click", function(){
+  document.getElementById("restoreFile").click();
+});
+document.getElementById("restoreFile").addEventListener("change", function(ev){
+  var file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  var fr = new FileReader();
+  fr.onload = function(){
+    try {
+      var s = JSON.parse(fr.result);
+      if (!s || !s.names || !s.records) throw new Error("bad");
+      if (!confirm("現在の記録をバックアップの内容で置き換えます。よろしいですか？")) return;
+      state = normalizeState(s);
+      saveState(); purgeOld();
+      renderHome();
+      alert("読み込みました。");
+    } catch(e){ alert("バックアップファイルを読み込めませんでした。"); }
+    ev.target.value = "";
+  };
+  fr.readAsText(file);
+});
+
+function downloadBlob(blob, filename){
+  if (navigator.msSaveBlob){ navigator.msSaveBlob(blob, filename); return; }
+  var a = document.createElement("a");
+  var url = URL.createObjectURL(blob);
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
+
+/* ================= Excel（.xlsx）出力 ================= */
+function exportMonth(y, m){
+  try {
+    var blob = buildXlsx(y, m);
+    downloadBlob(blob, "タイムカード_" + y + "年" + ("0"+m).slice(-2) + "月.xlsx");
+  } catch(e){
+    alert("Excel出力でエラーが発生しました: " + e.message);
+  }
+}
+document.getElementById("exportThisBtn").addEventListener("click", function(){
+  var t = new Date(); exportMonth(t.getFullYear(), t.getMonth()+1);
+});
+document.getElementById("exportPrevBtn").addEventListener("click", function(){
+  var t = new Date(); var y = t.getFullYear(), m = t.getMonth();
+  if (m === 0){ m = 12; y--; }
+  exportMonth(y, m);
+});
+
+function monthTotalU(p, y, m){
+  var pm = state.records["p"+p]; if (!pm) return 0;
+  var mm = pm[ymKey(y,m)]; if (!mm) return 0;
+  var t = 0;
+  for (var d in mm){ var r = mm[d]; if (r && r.u) t += r.u; }
+  return t;
+}
+function fiscalBaseU(p, y, m){
+  var fy = m >= 4 ? y : y-1;
+  var cur = fy*12 + 3;
+  var end = y*12 + (m-1);
+  var t = 0;
+  for (; cur < end; cur++){
+    t += monthTotalU(p, Math.floor(cur/12), cur%12+1);
+  }
+  return t;
+}
+function xmlEsc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+}
+var COLS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q"];
+
+function sheetXml(p, y, m){
+  var days = new Date(y, m, 0).getDate();
+  var rows = [];
+  function hRow(rn, cells){
+    var xml = '<row r="'+rn+'">';
+    for (var i=0;i<COLS.length;i++){
+      var c = COLS[i], t = cells[c];
+      xml += '<c r="'+c+rn+'" s="1"' + (t!==undefined ? ' t="inlineStr"><is><t>'+xmlEsc(t)+'</t></is></c>' : '/>');
+    }
+    return xml + '</row>';
+  }
+  rows.push(hRow(1, {A:"勤務日", B:"タイムカード", H:"自己申告", L:"過重対象", N:"月累計上限対象", P:"年累計上限対象"}));
+  rows.push(hRow(2, {B:"出校", D:"退校", F:"在校時間", H:"上限対象", J:"振替対象"}));
+  rows.push(hRow(3, {A:"日付", B:"時", C:"分", D:"時", E:"分", F:"時間", G:"分",
+                     H:"時間", I:"分", J:"時間", K:"分", L:"時間", M:"分",
+                     N:"時間", O:"分", P:"時間", Q:"分"}));
+  var cumMonth = 0;
+  var cumYearBase = fiscalBaseU(p, y, m);
+  for (var d=1; d<=days; d++){
+    var rn = 3 + d;
+    var w = new Date(y, m-1, d).getDay();
+    var rec = getRec(p, y, m, d);
+    var z = zaikoMin(rec);
+    var u = (rec && rec.u !== null && rec.u !== undefined) ? rec.u : null;
+    var f = (rec && rec.f) ? rec.f : 0;
+    if (u !== null) cumMonth += u;
+    var cumYear = cumYearBase + cumMonth;
+    var xml = '<row r="'+rn+'">';
+    xml += '<c r="A'+rn+'" s="2" t="inlineStr"><is><t>'+xmlEsc(m+"月"+d+"日("+WDAY[w]+")")+'</t></is></c>';
+    var num = function(col, v){
+      xml += '<c r="'+col+rn+'" s="2"' + (v===null||v===undefined ? '/>' : '><v>'+v+'</v></c>');
+    };
+    var hasS = rec && rec.s !== null && rec.s !== undefined;
+    var hasE = rec && rec.e !== null && rec.e !== undefined;
+    num("B", hasS ? Math.floor(rec.s/60) : null);
+    num("C", hasS ? rec.s%60 : null);
+    num("D", hasE ? Math.floor(rec.e/60) : null);
+    num("E", hasE ? rec.e%60 : null);
+    num("F", z===null ? 0 : Math.floor(z/60));
+    num("G", z===null ? 0 : z%60);
+    num("H", u===null ? null : Math.floor(u/60));
+    num("I", u===null ? null : u%60);
+    num("J", f ? Math.floor(f/60) : 0);
+    num("K", f ? f%60 : 0);
+    num("L", 0); num("M", 0);
+    num("N", Math.floor(cumMonth/60)); num("O", cumMonth%60);
+    num("P", Math.floor(cumYear/60)); num("Q", cumYear%60);
+    xml += '</row>';
+    rows.push(xml);
+  }
+  var merges = ["A1:A2","B1:G1","H1:K1","L1:M2","N1:O2","P1:Q2",
+                "B2:C2","D2:E2","F2:G2","H2:I2","J2:K2"];
+  var mergeXml = '<mergeCells count="'+merges.length+'">';
+  for (var i=0;i<merges.length;i++) mergeXml += '<mergeCell ref="'+merges[i]+'"/>';
+  mergeXml += '</mergeCells>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<cols><col min="1" max="1" width="14" customWidth="1"/><col min="2" max="17" width="6.5" customWidth="1"/></cols>'
+    + '<sheetData>' + rows.join("") + '</sheetData>'
+    + mergeXml
+    + '</worksheet>';
+}
+
+function sanitizeSheetName(name, idx, used){
+  var s = String(name).replace(/[\[\]\*\?\/\\:']/g, "").substring(0, 25);
+  if (!s) s = "名前" + (idx+1);
+  var base = s, n = 2;
+  while (used[s]){ s = base + "(" + n + ")"; n++; }
+  used[s] = true;
+  return s;
+}
+
+function buildXlsx(y, m){
+  var used = {};
+  var sheets = [];
+  for (var p=0; p<state.count; p++){
+    sheets.push({ name: sanitizeSheetName(getName(p), p, used), xml: sheetXml(p, y, m) });
+  }
+  var files = [];
+  var ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    + '<Default Extension="xml" ContentType="application/xml"/>'
+    + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+    + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+  for (var i=0;i<sheets.length;i++){
+    ct += '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  }
+  ct += '</Types>';
+  files.push({ name:"[Content_Types].xml", data:utf8(ct) });
+
+  files.push({ name:"_rels/.rels", data:utf8(
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+    + '</Relationships>') });
+
+  var wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+  var wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  for (var i=0;i<sheets.length;i++){
+    wb += '<sheet name="'+xmlEsc(sheets[i].name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>';
+    wbRels += '<Relationship Id="rId'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>';
+  }
+  wb += '</sheets></workbook>';
+  wbRels += '<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+    + '</Relationships>';
+  files.push({ name:"xl/workbook.xml", data:utf8(wb) });
+  files.push({ name:"xl/_rels/workbook.xml.rels", data:utf8(wbRels) });
+
+  files.push({ name:"xl/styles.xml", data:utf8(
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<fonts count="1"><font><sz val="11"/><name val="游ゴシック"/></font></fonts>'
+    + '<fills count="3">'
+    + '<fill><patternFill patternType="none"/></fill>'
+    + '<fill><patternFill patternType="gray125"/></fill>'
+    + '<fill><patternFill patternType="solid"><fgColor rgb="FFFABF8F"/><bgColor indexed="64"/></patternFill></fill>'
+    + '</fills>'
+    + '<borders count="2">'
+    + '<border><left/><right/><top/><bottom/><diagonal/></border>'
+    + '<border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border>'
+    + '</borders>'
+    + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    + '<cellXfs count="3">'
+    + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+    + '<xf numFmtId="0" fontId="0" fillId="2" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+    + '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>'
+    + '</cellXfs>'
+    + '<cellStyles count="1"><cellStyle name="標準" xfId="0" builtinId="0"/></cellStyles>'
+    + '</styleSheet>') });
+
+  for (var i=0;i<sheets.length;i++){
+    files.push({ name:"xl/worksheets/sheet"+(i+1)+".xml", data:utf8(sheets[i].xml) });
+  }
+  return new Blob([buildZip(files)], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+
+/* --- UTF-8 エンコード --- */
+function utf8(str){
+  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(str);
+  var out = [];
+  for (var i=0;i<str.length;i++){
+    var c = str.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF && i+1 < str.length){
+      c = 0x10000 + ((c-0xD800)<<10) + (str.charCodeAt(i+1)-0xDC00); i++;
+    }
+    if (c < 0x80) out.push(c);
+    else if (c < 0x800){ out.push(0xC0|(c>>6), 0x80|(c&63)); }
+    else if (c < 0x10000){ out.push(0xE0|(c>>12), 0x80|((c>>6)&63), 0x80|(c&63)); }
+    else { out.push(0xF0|(c>>18), 0x80|((c>>12)&63), 0x80|((c>>6)&63), 0x80|(c&63)); }
+  }
+  return new Uint8Array(out);
+}
+
+/* --- CRC32 --- */
+var CRC_TABLE = (function(){
+  var t = [], c;
+  for (var n=0;n<256;n++){
+    c = n;
+    for (var k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t.push(c >>> 0);
+  }
+  return t;
+})();
+function crc32(buf){
+  var c = 0xFFFFFFFF;
+  for (var i=0;i<buf.length;i++) c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/* --- ZIP（無圧縮） --- */
+function buildZip(files){
+  var parts = [], central = [], offset = 0;
+  for (var i=0;i<files.length;i++){
+    var f = files[i];
+    var nameB = utf8(f.name), crc = crc32(f.data), sz = f.data.length;
+    var lh = new Uint8Array(30 + nameB.length);
+    var dv = new DataView(lh.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0x0800, true);
+    dv.setUint16(8, 0, true);
+    dv.setUint16(10, 0, true); dv.setUint16(12, 0x21, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, sz, true); dv.setUint32(22, sz, true);
+    dv.setUint16(26, nameB.length, true); dv.setUint16(28, 0, true);
+    lh.set(nameB, 30);
+    parts.push(lh); parts.push(f.data);
+    var ch = new Uint8Array(46 + nameB.length);
+    var dv2 = new DataView(ch.buffer);
+    dv2.setUint32(0, 0x02014b50, true);
+    dv2.setUint16(4, 20, true); dv2.setUint16(6, 20, true);
+    dv2.setUint16(8, 0x0800, true); dv2.setUint16(10, 0, true);
+    dv2.setUint16(12, 0, true); dv2.setUint16(14, 0x21, true);
+    dv2.setUint32(16, crc, true); dv2.setUint32(20, sz, true); dv2.setUint32(24, sz, true);
+    dv2.setUint16(28, nameB.length, true);
+    dv2.setUint32(42, offset, true);
+    ch.set(nameB, 46);
+    central.push(ch);
+    offset += lh.length + sz;
+  }
+  var centralSize = 0;
+  for (var i=0;i<central.length;i++) centralSize += central[i].length;
+  var end = new Uint8Array(22);
+  var dv3 = new DataView(end.buffer);
+  dv3.setUint32(0, 0x06054b50, true);
+  dv3.setUint16(8, files.length, true); dv3.setUint16(10, files.length, true);
+  dv3.setUint32(12, centralSize, true); dv3.setUint32(16, offset, true);
+  var total = offset + centralSize + 22;
+  var out = new Uint8Array(total), pos = 0;
+  var all = parts.concat(central, [end]);
+  for (var i=0;i<all.length;i++){ out.set(all[i], pos); pos += all[i].length; }
+  return out;
+}
+
+/* ================= 初期表示 ================= */
+if (!storageOK) document.getElementById("storageWarn").classList.remove("hidden");
+renderHome();
+
+})();
+</script>
+</body>
+</html>
