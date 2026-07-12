@@ -481,10 +481,8 @@ function escHtml(s){
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 function nowMin(){ var t = new Date(); return t.getHours()*60 + t.getMinutes(); }
-function roundedNow(){ // 10分単位に丸め（四捨五入）、0:00〜23:50に収める
-  var r = Math.round(nowMin()/10)*10;
-  if (r >= 24*60) r = 23*60 + 50;
-  return r;
+function roundedNow(){ // 打刻は現在時刻そのまま（1分単位）
+  return nowMin();
 }
 
 /* ================= 画面切り替え ================= */
@@ -581,10 +579,10 @@ function updateClocks(){
     (t.getMonth()+1) + "月" + t.getDate() + "日（" + WDAY[t.getDay()] + "）　" + hm;
   document.getElementById("stampClock").textContent = hm;
   document.getElementById("stampRounded").textContent =
-    "打刻すると「" + fmtClock(roundedNow()) + "」で記録されます（10分単位）";
+    "打刻すると現在時刻「" + fmtClock(roundedNow()) + "」がそのまま記録されます";
 }
 updateClocks();
-setInterval(updateClocks, 5000);
+setInterval(updateClocks, 1000);
 
 /* ================= 打刻 ================= */
 function renderTodayStat(){
